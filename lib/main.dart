@@ -3,8 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_notification_demo/firebase_options.dart';
 import 'package:flutter_notification_demo/notification_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 NotificationService notificationService = NotificationService();
 bool _isContextSet = false;
@@ -17,7 +17,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform,);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   notificationService.requestNotificationPermission();
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle());
@@ -50,8 +50,9 @@ class _MyAppState extends State<MyApp>{
     super.initState();
     if(widget.initialMessage !=null){
       Future.delayed(Duration.zero, () {
-        if(_isContextSet)
+        if(_isContextSet) {
           notificationService.handleNotification(widget.initialMessage!);
+        }
 
       });
     }
@@ -76,6 +77,8 @@ class _MyAppState extends State<MyApp>{
 
 
 class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
@@ -102,7 +105,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 class DetailScreen extends StatelessWidget {
   final String payload;
-  DetailScreen({super.key, required this.payload});
+  const DetailScreen({super.key, required this.payload});
 
   @override
   Widget build(BuildContext context) {

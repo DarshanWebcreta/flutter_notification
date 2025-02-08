@@ -1,21 +1,11 @@
 // notification_service.dart
+
 import 'dart:io';
 import 'dart:math';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'main.dart';
-// notification_service.dart
-import 'dart:io';
-import 'dart:math';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'main.dart';
 
 class NotificationService {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
@@ -23,69 +13,49 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
   FlutterLocalNotificationsPlugin();
   BuildContext? _context;
-  void setContext(BuildContext context){
+
+  void setContext(BuildContext context) {
     _context = context;
   }
 
-
-  void initialLocalNotification() async {
-    if (Platform.isAndroid) {
-      flutterLocalNotificationsPlugin
+  Future<void> initialLocalNotification() async {
+    // Request iOS permissions upfront
+    if (Platform.isIOS) {
+      await flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()!
-          .requestNotificationsPermission();
-      AndroidInitializationSettings androidSettings =
-      AndroidInitializationSettings("@mipmap/ic_launcher");
-
-      DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestBadgePermission: true,
-          requestCriticalPermission: true,
-          requestSoundPermission: true);
-
-      InitializationSettings initializationSettings = InitializationSettings(
-          android: androidSettings, iOS: iosSettings);
-
-      await flutterLocalNotificationsPlugin.initialize(
-        initializationSettings,
-        onDidReceiveNotificationResponse: (payload) async {
-          if (_context != null) {
-            handleNavigation(_context!, payload.payload.toString());
-          } else {
-            print("Context is Null");
-          }
-        },
-      );
-    } else if (Platform.isIOS) {
-      flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>()!
-          .requestPermissions(
+          IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
         alert: true,
         badge: true,
         sound: true,
       );
-
-      DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestBadgePermission: true,
-          requestCriticalPermission: true,
-          requestSoundPermission: true);
-
-      InitializationSettings initializationSettings =
-      InitializationSettings(iOS: iosSettings);
-
-      await flutterLocalNotificationsPlugin.initialize(
-        initializationSettings,
-        onDidReceiveNotificationResponse: (payload) async {
-          if (_context != null) {
-            handleNavigation(_context!, payload.payload.toString());
-          } else {
-            print("Context is Null");
-          }
-        },
-      );
     }
+
+    AndroidInitializationSettings androidSettings =
+    const AndroidInitializationSettings("@mipmap/ic_launcher"); // Use const
+    DarwinInitializationSettings iosSettings = const DarwinInitializationSettings( // Use const
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestCriticalPermission: true,
+      requestSoundPermission: true,
+
+    );
+
+    InitializationSettings initializationSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+
+    await flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (payload) async {
+        if (_context != null) {
+          handleNavigation(_context!, payload.payload.toString());
+        } else {
+          print("Context is Null");
+        }
+      },
+    );
   }
 
   void fireBaseInit() {
@@ -95,7 +65,8 @@ class NotificationService {
     });
 
     FirebaseMessaging.onMessage.listen((message) {
-      print("############# Notification_Event_Call ############### ${message.data}");
+      print(
+          "############# Notification_Event_Call ############### ${message.data}");
       print("title :${message.notification!.title}");
       print("Message_Body: ${message.notification!.body}");
       print("Message_data: ${message.data}");
@@ -105,20 +76,20 @@ class NotificationService {
       print("Message_id: ${message.messageId}");
 
       // Show local notification only if the app is in foreground
-      if (message.notification != null) {
+     // if (message.notification != null) {
         showNotification(message);
-      }
+      //}
     });
   }
 
-
   Future<void> showNotification(RemoteMessage message) async {
+    print("Bhai hu to aavuj chhuv ");
     AndroidNotificationChannel channel = AndroidNotificationChannel(
       Random.secure().nextInt(10000).toString(),
       'high importance',
       importance: Importance.max,
       enableVibration: true,
-      sound: RawResourceAndroidNotificationSound("msg"),
+      sound: const RawResourceAndroidNotificationSound("msg"), // Use const
     );
 
     AndroidNotificationDetails androidNotificationDetails =
@@ -129,7 +100,7 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.max,
       icon: '@mipmap/ic_launcher',
-      sound: RawResourceAndroidNotificationSound("msg"),
+      sound: const RawResourceAndroidNotificationSound("msg"), // Use const
       category: AndroidNotificationCategory.message,
       indeterminate: true,
       ticker: 'ticker',
@@ -139,9 +110,7 @@ class NotificationService {
     );
 
     DarwinNotificationDetails darwinNotificationDetails =
-    DarwinNotificationDetails(
-        categoryIdentifier: darwinNotificationCategoryPlain,
-        attachments: []);
+    DarwinNotificationDetails( categoryIdentifier: darwinNotificationCategoryPlain); // Use const
 
     NotificationDetails notificationDetails = NotificationDetails(
       android: androidNotificationDetails,
@@ -151,34 +120,43 @@ class NotificationService {
     Future.delayed(
       Duration.zero,
           () {
-        flutterLocalNotificationsPlugin.show(
-            Random.secure().nextInt(10000),
-            message.notification!.title,
-            message.notification!.body,
-            notificationDetails,
-            payload:message.notification!.title!.contains("Call from")? "home":"details"); // Hardcoded payload here
-
-          },
+        try {
+          print("About to show local notification");
+          flutterLocalNotificationsPlugin.show(
+              Random.secure().nextInt(10000),
+              message.notification!.title ?? 'Default Title', // Provide a default
+              message.notification!.body ?? 'Default Body', // Provide a default
+              notificationDetails,
+              payload: message.notification!.title!.contains("Call from")
+                  ? "home"
+                  : "details");
+          print("Local notification shown (hopefully!)");
+        } catch (e) {
+          print("Error showing local notification: $e");
+        }
+      },
     );
   }
 
   Future<void> requestNotificationPermission() async {
     NotificationSettings settings = await messaging.requestPermission(
-        alert: true,
-        announcement: true,
-        badge: true,
-        carPlay: true,
-        provisional: true,
-        sound: true,
-        criticalAlert: true);
+      alert: true,
+      announcement: true,
+      badge: true,
+      carPlay: true,
+      provisional: true,
+      sound: true,
+      criticalAlert: true,
+    );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print("grant permission");
+      print("iOS: Granted permission");
     } else if (settings.authorizationStatus ==
         AuthorizationStatus.provisional) {
-      print("grant permission from provisional");
+      print("iOS: Granted provisional permission");
     } else {
-      print("permission denined");
+      print(
+          "iOS: Permission denied: ${settings.authorizationStatus}"); // Add this!
     }
   }
 
@@ -186,40 +164,50 @@ class NotificationService {
     String? token = "";
     if (Platform.isIOS) {
       print('FlutterFire Messaging Example: Getting APNs token...');
+      await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
 
-      token = await messaging.getAPNSToken();
+      token = await messaging.getToken();
       print('FlutterFire Messaging Example: Got APNs token: $token');
     } else {
       token = await messaging.getToken();
     }
     print(token);
-    return token!;
+    return token ?? '';
   }
 
   void tokenRefress() {
     messaging.onTokenRefresh.listen((event) {
       print("token refress:${event}");
-      SharedPreferences.getInstance().then((value) => value.setString('uid', event));
+      SharedPreferences.getInstance()
+          .then((value) => value.setString('uid', event));
     });
   }
-
 
   void handleNotification(RemoteMessage message) async {
     if (_context == null) {
       return;
     }
 
-    handleNavigation(_context!,message.notification!.title.toString()); // Hardcoded payload here
-
+    handleNavigation(
+        _context!, message.notification!.title.toString()); // Hardcoded payload here
   }
-  void handleNavigation(BuildContext context, String payload){
-    if(payload == "details"){
+
+  void handleNavigation(BuildContext context, String payload) {
+    if (payload == "details") {
       print("details screen call karse");
 
       //Navigator.pushNamed(context, '/details',arguments:  "This is from Notification Payload");
-    }else{
+    } else {
       print("HomeScreen call karse");
-    //   Navigator.pushNamed(context, '/home');
+      //   Navigator.pushNamed(context, '/home');
     }
   }
 
